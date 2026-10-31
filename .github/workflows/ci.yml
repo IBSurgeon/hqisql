@@ -123,5 +123,7 @@ jobs:
           curl -sSL -o zstd.zip https://github.com/facebook/zstd/releases/download/v1.5.7/zstd-v1.5.7-win64.zip
           unzip -q zstd.zip
           cp zstd-v1.5.7-win64/dll/libzstd.dll "$out/"
-          "$out/hqisql.exe" -z < /dev/null | head -2
+          # Not /dev/null: isql reads a character device with ReadConsoleW.
+          : > empty.sql
+          "$out/hqisql.exe" -z < empty.sql | head -2
           python hqisql/tests/integration/run.py "$out"
