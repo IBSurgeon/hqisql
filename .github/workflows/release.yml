@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 env:
-  FIREBIRD: v5.0-release
+  FB_REF: v5.0-release
   ZSTD: 1.5.7
 
 jobs:
@@ -24,7 +24,7 @@ jobs:
 
       - name: Clone Firebird and install hqisql
         run: |
-          git clone -q --depth 1 -b $FIREBIRD https://github.com/FirebirdSQL/firebird.git firebird
+          git clone -q --depth 1 -b $FB_REF https://github.com/FirebirdSQL/firebird.git firebird
           hqisql/install.sh firebird
 
       # The Docker image of the official Firebird builds: an old glibc, so
@@ -45,13 +45,16 @@ jobs:
           cp hqisql/README.md hqisql/LICENSE hqisql/NOTICE $d/
           tar czf $d.tar.gz $d
 
-      # The archive in a clean directory, with the engine of the build.
+      # The archive in a clean directory, with the engine of the build. The
+      # links in gen/Release/firebird/lib point into the container: the
+      # libraries come from the buildroot of "make dist".
       - name: Check the archive
         run: |
           python3 -m pip install pyarrow
           mkdir check && tar xzf hqisql-*-linux-x64.tar.gz -C check
           h=$(ls check/*/hqisql)
-          LD_LIBRARY_PATH=firebird/gen/Release/firebird/lib $h -z < /dev/null | head -2
+          export LD_LIBRARY_PATH=$PWD/firebird/gen/buildroot/opt/firebird/lib
+          $h -z < /dev/null | head -2
           python3 hqisql/tests/integration/run.py firebird/gen/Release/firebird --hqisql=$h
 
       - uses: actions/upload-artifact@v4
@@ -69,7 +72,7 @@ jobs:
       - name: Clone Firebird and install hqisql
         shell: cmd
         run: |
-          git clone -q --depth 1 -b %FIREBIRD% https://github.com/FirebirdSQL/firebird.git firebird
+          git clone -q --depth 1 -b %FB_REF% https://github.com/FirebirdSQL/firebird.git firebird
           for /r firebird %%i in (*.bat) do unix2dos -q "%%i"
           call hqisql\install.bat firebird || exit /b 1
 

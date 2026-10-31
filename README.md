@@ -24,6 +24,21 @@ the new commands give the same output as in isql.
 - Client: the fbclient of Firebird 5.
 - Server: Firebird 3.0 or newer.
 
+## Download
+
+Ready-made builds for Linux x64 and Windows x64 are on the
+[Releases](https://github.com/IBSurgeon/hqisql/releases) page. Check the
+archive with `SHA256SUMS` from the same release.
+
+- Linux (`hqisql-<version>-fb5-linux-x64.tar.gz`): copy `hqisql` to the
+  `bin` directory of a Firebird 5 installation, for example
+  `/opt/firebird/bin`. hqisql loads `libfbclient.so.2` and
+  `libtomcrypt.so.1` from `../lib`. It is built in the Docker image of the
+  official Firebird builds, so it runs on the same Linux versions.
+- Windows (`hqisql-<version>-fb5-windows-x64.zip`): copy `hqisql.exe` and
+  `libzstd.dll` to the directory of a Firebird 5 installation (with
+  `fbclient.dll`).
+
 ## Building
 
 hqisql is installed into a Firebird 5.0 source tree and built with Firebird.
