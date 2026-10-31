@@ -41,6 +41,7 @@ jobs:
           d=hqisql-$v-fb5-linux-x64
           mkdir $d
           cp firebird/gen/Release/firebird/bin/hqisql $d/
+          strip --strip-unneeded $d/hqisql
           cp firebird/gen/Release/firebird/replxx-LICENSE.md $d/
           cp hqisql/README.md hqisql/LICENSE hqisql/NOTICE $d/
           tar czf $d.tar.gz $d
