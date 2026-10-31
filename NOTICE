@@ -1,0 +1,33 @@
+hqisql
+Copyright (c) 2026 IBSurgeon
+
+Licenses
+--------
+
+- The hqisql code (overlay/src/hqisql, the build files, the scripts of this
+  repository): Initial Developer's Public License Version 1.0, see LICENSE.
+
+- patches/*/isql.epp.patch changes src/isql/isql.epp of Firebird. Like
+  isql.epp itself, the patched file is subject to the InterBase Public
+  License Version 1.0 (IPL); the text is in the Firebird source tree,
+  builds/install/misc/IPLicense.txt. All the changes are under
+  #ifdef HQISQL: the regular isql of Firebird does not change.
+
+Third-party code
+----------------
+
+- replxx (overlay/extern/replxx): a line editing library.
+  ClickHouse fork of AmokHuginnsson/replxx, commit
+  0e5df37c5e1185430fc3d8c65b402c6582dd5ae7.
+  Copyright (c) 2017-2018, Marcin Konarski (amok at codestation.org),
+  Copyright (c) 2010, Salvatore Sanfilippo, Copyright (c) 2010, Pieter
+  Noordhuis and other contributors. BSD license: see
+  overlay/extern/replxx/LICENSE.md. The release archives have it as
+  replxx-LICENSE.md.
+  hqisql has 4 local changes in replxx; overlay/extern/replxx/REVISION
+  lists them.
+
+- zstd (only in the Windows release archive, libzstd.dll): Zstandard
+  compression library, Copyright (c) Meta Platforms, Inc. and affiliates.
+  BSD license: see zstd-LICENSE.txt in the archive. hqisql loads it at run
+  time to read Parquet and Avro files compressed with zstd.

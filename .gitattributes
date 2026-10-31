@@ -1,0 +1,14 @@
+# Text files: LF in the repository. Windows build files keep CRLF in the
+# working tree, the shell scripts and the patches keep LF everywhere.
+*               text=auto
+*.sh            text eol=lf
+*.patch         text eol=lf
+VERSION         text eol=lf
+*.bat           text eol=crlf
+*.sln           text eol=crlf
+*.vcxproj       text eol=crlf
+*.vcxproj.filters text eol=crlf
+*.parquet       binary
+*.avro          binary
+# Test data: byte for byte (encodings, BOM, line ends).
+tests/integration/csv/*.csv -text

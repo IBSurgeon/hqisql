@@ -1,0 +1,114 @@
+name: Release
+
+# A tag v<version> (the same as the VERSION file) builds the release
+# archives and makes a draft GitHub release with them.
+
+on:
+  push:
+    tags: ['v*']
+
+env:
+  FIREBIRD: v5.0-release
+  ZSTD: 1.5.7
+
+jobs:
+
+  linux-x64:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: hqisql
+
+      - name: Clone Firebird and install hqisql
+        run: |
+          git clone -q --depth 1 -b $FIREBIRD https://github.com/FirebirdSQL/firebird.git firebird
+          hqisql/install.sh firebird
+
+      # The Docker image of the official Firebird builds: an old glibc, so
+      # hqisql runs on old Linux systems too. Its build.sh runs make, make
+      # tests and make run_tests: hqisql is built and tested with them.
+      - name: Build in the Firebird Docker image
+        run: |
+          cd firebird/builds/docker/linux/x86-x64
+          ./run-x64.sh
+
+      - name: Pack
+        run: |
+          v=$(cat hqisql/VERSION)
+          d=hqisql-$v-fb5-linux-x64
+          mkdir $d
+          cp firebird/gen/Release/firebird/bin/hqisql $d/
+          cp firebird/gen/Release/firebird/replxx-LICENSE.md $d/
+          cp hqisql/README.md hqisql/LICENSE hqisql/NOTICE $d/
+          tar czf $d.tar.gz $d
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-x64
+          path: hqisql-*-linux-x64.tar.gz
+
+  windows-x64:
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: hqisql
+
+      - name: Clone Firebird and install hqisql
+        shell: cmd
+        run: |
+          git clone -q --depth 1 -b %FIREBIRD% https://github.com/FirebirdSQL/firebird.git firebird
+          for /r firebird %%i in (*.bat) do unix2dos -q "%%i"
+          call hqisql\install.bat firebird || exit /b 1
+
+      - name: Build
+        shell: cmd
+        run: |
+          call "C:\Program Files\Microsoft Visual Studio\18\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=amd64
+          cd firebird\builds\win32
+          call make_icu.bat
+          call make_boot.bat
+          if "%ERRLEV%"=="1" exit /b 1
+          call make_all.bat
+          if "%ERRLEV%"=="1" exit /b 1
+
+      - name: Pack
+        shell: bash
+        run: |
+          v=$(cat hqisql/VERSION)
+          d=hqisql-$v-fb5-windows-x64
+          out=$(ls -d firebird/output_x64*)
+          curl -sSL -o zstd.zip https://github.com/facebook/zstd/releases/download/v$ZSTD/zstd-v$ZSTD-win64.zip
+          unzip -q zstd.zip
+          mkdir $d
+          cp "$out/hqisql.exe" "$out/replxx-LICENSE.md" $d/
+          cp zstd-v$ZSTD-win64/dll/libzstd.dll $d/
+          curl -sSL -o $d/zstd-LICENSE.txt https://raw.githubusercontent.com/facebook/zstd/v$ZSTD/LICENSE
+          cp hqisql/README.md hqisql/LICENSE hqisql/NOTICE $d/
+          7z a -tzip $d.zip $d > /dev/null
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-x64
+          path: hqisql-*-windows-x64.zip
+
+  release:
+    needs: [linux-x64, windows-x64]
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: The tag must match VERSION
+        run: test "${GITHUB_REF_NAME#v}" = "$(cat VERSION)"
+
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+
+      - name: Draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" --draft --title "hqisql ${GITHUB_REF_NAME#v}" --notes-file CHANGELOG.md hqisql-*

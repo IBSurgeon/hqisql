@@ -1,0 +1,32 @@
+diff --git a/builds/posix/Makefile.in b/builds/posix/Makefile.in
+index 58be43b189..cab91f43ef 100644
+--- a/builds/posix/Makefile.in
++++ b/builds/posix/Makefile.in
+@@ -616,6 +616,13 @@ nbackup:		$(NBACKUP)
+ $(NBACKUP):		$(NBACKUP_Objects) $(COMMON_LIB)
+ 	$(EXE_LINK) $(EXE_LINK_OPTIONS) $^ -o $@ $(FIREBIRD_LIBRARY_LINK) $(LINK_LIBS)
+ 
++# hqisql (isql with the replxx line editor): built with the utilities,
++# tested with the other tests. See make.hqisql.
++include $(ROOT)/builds/posix/make.hqisql
++utilities: hqisql
++tests_process: $(HQISQL_TEST)
++run_tests_process: run_hqisql_test
++
+ 
+ #___________________________________________________________________________
+ # plugins - some of them are required to build examples, use separate entry for them
+diff --git a/builds/win32/make_all.bat b/builds/win32/make_all.bat
+index b850f52569..bf923fca4d 100644
+--- a/builds/win32/make_all.bat
++++ b/builds/win32/make_all.bat
+@@ -33,6 +33,9 @@ if errorlevel 1 call :ERROR build failed - see make_all_%FB_TARGET_PLATFORM%.log
+ ) else (
+   @call :MOVE
+ )
++
++:: hqisql (isql with the replxx line editor), when installed
++@if "%FB_CLIENT_ONLY%"=="" if exist make_hqisql.bat call make_hqisql.bat %*
+ @goto :EOF
+ 
+ ::===========

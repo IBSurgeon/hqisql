@@ -1,0 +1,345 @@
+diff --git a/src/isql/isql.epp b/src/isql/isql.epp
+index 77ccb2adca..c836857145 100644
+--- a/src/isql/isql.epp
++++ b/src/isql/isql.epp
+@@ -124,6 +124,10 @@ enum literal_string_type
+ #include "../common/classes/MsgPrint.h"
+ #include "../common/classes/array.h"
+ 
++#ifdef HQISQL
++#include "../hqisql/HqIsql.h"
++#endif
++
+ using Firebird::string;
+ using Firebird::PathName;
+ using Firebird::TempFile;
+@@ -806,6 +810,12 @@ int ISQL_main(int argc, char* argv[])
+ #endif
+ 	atexit(&atexit_fb_shutdown);
+ 
++#ifdef HQISQL
++	// hqisql: prepare the console and remove the hqisql-only switches
++	// (-noedit) before the regular command line parsing.
++	Hq::init(argc, argv);
++#endif
++
+ 	TEXT tabname[MAX_SQL_IDENTIFIER_SIZE];
+ 	tabname[0] = '\0';
+ 
+@@ -893,6 +903,10 @@ int ISQL_main(int argc, char* argv[])
+ 	gds_alloc_report(0, fn, 0);
+ #endif
+ 
++#ifdef HQISQL
++	Hq::shutdown();
++#endif
++
+ 	return Exit_value;
+ }
+ 
+@@ -1030,6 +1044,14 @@ static void readNextInputLine(const char* prompt)
+ 
+ 	getColumn = 0;
+ 
++#ifdef HQISQL
++	// hqisql: interactive input through the replxx line editor.
++	if (Hq::readLine(prompt, Interactive && !Input_file, &lastInputLine))
++	{
++		++Filelist->Ifp().indev_aux;
++		return;
++	}
++#endif
+ #ifdef HAVE_EDITLINE_H
+ 	if (Filelist->readingStdin())
+ 	{
+@@ -5348,6 +5370,9 @@ static processing_state frontend_set(const char* cmd, const char* const* parms,
+ 			sql, warning, sqlCont, heading, bail,
+ 			bulk_insert, maxrows, stmtTimeout,
+ 			keepTranParams,	perTableStats, wireStats,
++#ifdef HQISQL
++			pagelength, preview,
++#endif
+ 			wrong
+ 		};
+ 		SetOptions(const optionsMap* inmap, size_t insize, int wrongval)
+@@ -5390,6 +5415,11 @@ static processing_state frontend_set(const char* cmd, const char* const* parms,
+ 		{SetOptions::keepTranParams, "KEEP_TRAN_PARAMS", 9},
+ 		{SetOptions::perTableStats, "PER_TABLE_STATS", 7},
+ 		{SetOptions::wireStats, "WIRE_STATS", 4}
++#ifdef HQISQL
++		,
++		{SetOptions::pagelength, "PAGELENGTH", 3},
++		{SetOptions::preview, "PREVIEW", 4}
++#endif
+ 	};
+ 
+ 	// Display current set options
+@@ -5633,6 +5663,35 @@ static processing_state frontend_set(const char* cmd, const char* const* parms,
+ 		ret = do_set_command(parms[2], &setValues.WireStats);
+ 		break;
+ 
++#ifdef HQISQL
++	case SetOptions::pagelength:
++		// hqisql: SET PAGELENGTH [<n>] - the -pag switch at run time. 0 prints
++		// the column titles once per query, no argument restores the default.
++		{
++			char* end = NULL;
++			errno = 0;
++			const long n = *parms[2] ? strtol(parms[2], &end, 10) : 20;
++
++			if (*parms[2] && (end == parms[2] || *end || errno || n < 0 || n > INT_MAX))
++			{
++				STDERROUT("SET PAGELENGTH: a number of rows (0 or more) is expected");
++				ret = ps_ERR;
++			}
++			else
++				Pagelength = (int) n;
++		}
++		break;
++
++	case SetOptions::preview:
++		// hqisql: SET PREVIEW [ON | OFF | <n>] - the first rows as a compact table.
++		if (!Hq::Preview::set(parms[2]))
++		{
++			STDERROUT("SET PREVIEW: ON, OFF or a number of rows is expected");
++			ret = ps_ERR;
++		}
++		break;
++#endif
++
+ 	default:
+ 		//{
+ 		//	TEXT msg_string[MSG_LENGTH];
+@@ -5825,6 +5884,11 @@ static processing_state get_statement(string& statement,
+ 	Filelist->Ifp().indev_line = Filelist->Ifp().indev_aux;
+ 	bool done = false;
+ 
++#ifdef HQISQL
++	// hqisql: the statement being assembled is the editor context.
++	Hq::StatementScope hqScope(statement);
++#endif
++
+ 	enum
+ 	{
+ 		normal,
+@@ -6053,6 +6117,14 @@ static processing_state get_statement(string& statement,
+ 	if (ret == CONT && statement.isEmpty())
+ 		ret = SKIP;
+ 
++#ifdef HQISQL
++	// hqisql: editor history and PREPARE / EXEC SQL / DEALLOCATE.
++	ret = hqScope.complete(ret, [](const TEXT* sql) {
++		const processing_state state = frontend(sql);
++		return state == CONT ? process_statement(sql) : state;
++	});
++#endif
++
+ 	if (ret == CONT)
+ 		ret = frontend(statement.c_str());
+ 
+@@ -6429,6 +6501,11 @@ static processing_state print_sets()
+ 	print_set("Show Row Count:", setValues.Docount);
+ 	//print_set("Row Count:", setValues.Docount);   // Changed print to the above to avoid confusion with next one
+ 	isqlGlob.printf("%-25s%lu%s", "Select maxrows limit:", setValues.maxRows, NEWLINE);
++#ifdef HQISQL
++	isqlGlob.printf("%-25s%d%s", "Page length:", Pagelength, NEWLINE);
++	isqlGlob.printf("%-25s%s, %u rows%s", "Preview:", Hq::Preview::enabled() ? "ON" : "OFF",
++		Hq::Preview::rows(), NEWLINE);
++#endif
+ 	print_set("Autocommit DDL:", setValues.Autocommit);
+ 	print_set("Access Plan:", setValues.Plan);
+ 	print_set("Access Plan only:", setValues.Planonly);
+@@ -6562,6 +6639,44 @@ static processing_state help(const TEXT* what)
+ 			IUTILS_printf(Help, msg);
+ 		}
+ 		IUTILS_printf(Help, NEWLINE);
++#ifdef HQISQL
++		// hqisql: its own SET option is not in the message file.
++		if (*msgid == HLP_SETNAMES)
++		{
++			IUTILS_printf(Help, "    SET PAGelength [<n>]   -- repeat column titles every <n> rows, 0 is once, default 20");
++			IUTILS_printf(Help, NEWLINE);
++		}
++		if (*msgid == HLP_SETPLANONLY)
++		{
++			IUTILS_printf(Help, "    SET PREView [ON|OFF|<n>] -- first <n> rows (default 20) as a compact table cut at the screen width");
++			IUTILS_printf(Help, NEWLINE);
++		}
++		// hqisql: its own commands (HqStatements.h, HqImport.h).
++		if (*msgid == HLP_QUIT)
++		{
++			static const char* const hqHelp[] =
++			{
++				"",
++				"hqisql commands:",
++				"PREPARE <name> AS <statement> -- store a statement with ? marks",
++				"EXEC SQL <name> USING (<value>, ...) -- execute it with the values",
++				"EXEC SQL <name> USING BATCH (...), (...) -- execute it for every tuple",
++				"EXEC SQL <name> FROM <format> '<file>' [OPTIONS (...)] -- execute it for every row of the file",
++				"IMPORT INTO <table> [(<column>, ...)] FROM <format> '<file>' [OPTIONS (...)] -- load the file",
++				"    <format>: CSV, COPY (PostgreSQL text), PARQUET, AVRO",
++				"    OPTIONS (<option> = <value>, ...): DELIMITER ',', QUOTE '\"', HEADER, SKIP <n>, NULL '',",
++				"    ENCODING <charset>, DECIMAL ',', BATCH 1000, COMMIT <n>, ERRORS <n> (bad rows to <file>.bad)",
++				"    COPY: no QUOTE, DELIMITER is a tab, NULL is \\N; PARQUET, AVRO: SKIP, BATCH, COMMIT, ERRORS",
++				"DEALLOCATE <name>          -- drop the stored statement"
++			};
++
++			for (const char* line : hqHelp)
++			{
++				IUTILS_printf(Help, line);
++				IUTILS_printf(Help, NEWLINE);
++			}
++		}
++#endif
+ 	}
+ 	return (SKIP);
+ }
+@@ -7555,6 +7670,9 @@ static processing_state parse_arg(int argc, SCHAR** argv, SCHAR* tabname)
+ 
+ 				case IN_SW_ISQL_VERSION:
+ 					Version_info = true;
++#ifdef HQISQL
++					isqlGlob.printf("hqisql %s%s", HQISQL_VERSION, NEWLINE);
++#endif
+ 					IUTILS_msg_get(VERSION, errbuf, SafeArg() << FB_VERSION);
+ 					isqlGlob.printf("%s%s", errbuf, NEWLINE);
+ 					break;
+@@ -8413,9 +8531,15 @@ static processing_state print_line(Firebird::IMessageMetadata* message, UCHAR* b
+ 			{
+ 				// Save all the blob vars and print them at the end
+ 				// CVC: If varnum reaches 20, we must print an error instead of crashing.
++#ifdef HQISQL
++				const TEXT* const hqCell = p;	// hqisql: the cell for the SET PREVIEW table
++#endif
+ 				const int rc = print_item(&p, &var, pad[i]);
+ 				if (rc == SQL_BLOB && varnum < maxblob)
+ 					varlist[varnum++] = var;
++#ifdef HQISQL
++				Hq::Preview::addCell(hqCell, p);
++#endif
+ 			}
+ 		}
+ 		*p = 0;
+@@ -8427,6 +8551,12 @@ static processing_state print_line(Firebird::IMessageMetadata* message, UCHAR* b
+ 		return (CONT);
+ 	}
+ 
++#ifdef HQISQL
++	// hqisql: a previewed row is printed with the table, blobs are not shown.
++	if (Hq::Preview::endRow())
++		return CONT;
++#endif
++
+ 	isqlGlob.printf("%s%s", line, NEWLINE);
+ 
+ 	// If blobdisplay is not wanted, set varnum back to 0
+@@ -9356,6 +9486,10 @@ static processing_state process_statement(const TEXT* str2)
+ #endif
+ 
+ 		const bool printHead = !setValues.List && setValues.Heading;
++#ifdef HQISQL
++		// hqisql: SET PREVIEW collects the first rows and prints them after the loop.
++		Hq::Preview::begin(message, setValues.List, setValues.Heading);
++#endif
+ 		unsigned int lines;
+ 		for (lines = 0; !Interrupt_flag && !Abort_flag; ++lines)
+ 		{
+@@ -9364,11 +9498,32 @@ static processing_state process_statement(const TEXT* str2)
+ 			if (setValues.maxRows != 0 && lines >= setValues.maxRows)
+ 				break;
+ 
++#ifdef HQISQL
++			if (Hq::Preview::full(lines))
++				break;
++#endif
++
+ 			// Fetch the current cursor
+ 
+ 			if (curs->fetchNext(fbStatus, buffer) == Firebird::IStatus::RESULT_NO_DATA)
+ 				break;
+ 
++#ifdef HQISQL
++			// hqisql: a previewed statement prints its header with the table.
++			if (Hq::Preview::collecting())
++			{
++				if (ISQL_errmsg(fbStatus))
++				{
++					ret = ps_ERR;
++					break;
++				}
++
++				ISQL_warning(fbStatus);
++				ret = print_line(message, buffer, pad, line);
++				continue;
++			}
++#endif
++
+ 			// Print the header every Pagelength number of lines for
+ 			// command-line ISQL only.
+ 
+@@ -9402,6 +9557,10 @@ static processing_state process_statement(const TEXT* str2)
+ 		if (lines)
+ 			isqlGlob.printf(NEWLINE);
+ 
++#ifdef HQISQL
++		Hq::Preview::end();
++#endif
++
+ 		// Record count printed here upon request
+ 
+ 		if (setValues.Docount)
+@@ -10039,3 +10198,54 @@ bool IsqlWireStats::print(bool initial)
+ 
+ 	return true;
+ }
++
++#ifdef HQISQL
++// hqisql: the isql state for the hqisql commands (Hq::Isql in HqIsql.h).
++// The variables stay static, the regular isql build does not see this.
++namespace Hq {
++namespace Isql {
++
++Firebird::ITransaction* userTransaction()
++{
++	return M_Transaction() ? M__trans : NULL;
++}
++
++bool commitUserTransaction()
++{
++	return !M__trans || commit_trans(&M__trans);
++}
++
++Firebird::PathName inputFileName()
++{
++	return Filelist->Ifp().fileName(false);
++}
++
++bool interactive()
++{
++	return Interactive && !Input_file;
++}
++
++bool interrupted()
++{
++	return Interrupt_flag || Abort_flag;
++}
++
++bool quiet()
++{
++	return Quiet;
++}
++
++void printErrorLocation()
++{
++	if (Input_file)
++	{
++		TEXT errbuf[MSG_LENGTH];
++		const InputDevices::indev& Ifp = Filelist->Ifp();
++		IUTILS_msg_get(AFTERLINE, errbuf, SafeArg() << Ifp.indev_line << Ifp.fileName(true).c_str());
++		STDERROUT(errbuf);
++	}
++}
++
++}	// namespace Isql
++}	// namespace Hq
++#endif

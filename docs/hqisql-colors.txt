@@ -1,0 +1,27 @@
+# hqisql color scheme: the built-in colors, as a file to start from.
+#
+# Copy this file to %LOCALAPPDATA%\hqisql\colors.txt (Windows) or
+# ~/.hqisql_colors (Linux, macOS), or point HQISQL_COLORS at it. hqisql
+# reads it at startup; a missing file means the built-in colors. A line
+# that is not understood is reported and skipped.
+#
+# <element> = <color> [bold] [underline] [on <color>]
+#
+# Colors: default (the terminal foreground), black, red, green, brown,
+# blue, magenta, cyan, lightgray, gray, brightred, brightgreen, yellow,
+# brightblue, brightmagenta, brightcyan, white; rgb(r,g,b) with r, g, b
+# from 0 to 5 (the 216-color cube); gray(n) with n from 0 (black) to 23
+# (white); or a terminal palette index from 0 to 255. "default" alone
+# leaves the text uncolored.
+
+command    = yellow          # isql commands and their options: SET STATS ON, SHOW TABLE
+reserved   = brightblue      # reserved words: SELECT, FROM, WHERE
+keyword    = blue            # other keywords: NAME, TYPE, COUNT
+string     = brightgreen     # 'string'
+quoted     = brightmagenta   # "quoted identifier"
+number     = magenta
+comment    = gray            # -- and /* */
+param      = brightcyan      # :name and ?
+terminator = brightred       # ; or the SET TERM terminator
+hint       = gray            # the hint after the cursor
+completion = brightblue      # keywords in the Tab completion list

@@ -1,0 +1,20 @@
+ClickHouse/replxx fork of AmokHuginnsson/replxx
+pinned commit: 0e5df37c5e1185430fc3d8c65b402c6582dd5ae7 (master HEAD, 2026-07)
+Cloned 2026-09-26 for hqisql.
+Copied: LICENSE.md, README.md, include/, src/, examples/ (not built).
+
+Local changes (hqisql). Check them again when the copy is
+updated to a newer upstream commit:
+
+1. src/hq_win_compat.hxx (new file): Windows shims for an MSVC static
+   library build (STDOUT_FILENO, fsync, dprintf). Included under _WIN32 by
+   src/replxx.cxx, src/replxx_impl.cxx and src/terminal.cxx.
+2. src/windows.cxx, win_write(): write through the console API only when
+   the handle is a console (GetConsoleMode), not by the global tty::out flag.
+3. src/replxx_impl.cxx, src/replxx_impl.hxx: accept_hint() - Right or End
+   with the cursor at the end of the line inserts the displayed hint, like
+   fish/zsh autosuggestions. Called from move_one_char_right() and
+   go_to_end_of_line().
+4. src/replxx_impl.cxx, bracketed_paste(): on Windows read with
+   Terminal::read_char() (read_unicode_character() is POSIX only); POSIX
+   keeps the upstream raw read.

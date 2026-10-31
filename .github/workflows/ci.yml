@@ -1,0 +1,126 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  schedule:
+    # Every night: do the patches still apply to the Firebird branch?
+    - cron: '30 2 * * *'
+  workflow_dispatch:
+
+jobs:
+
+  # install, install again, --remove: the Firebird tree must be as before.
+  install-cycle:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, windows-2025]
+        firebird: [v5.0.4, v5.0-release]
+        autocrlf: ['false']
+        include:
+          - os: windows-2025
+            firebird: v5.0-release
+            autocrlf: 'true'
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: hqisql
+
+      - name: Clone Firebird ${{ matrix.firebird }}
+        run: git -c core.autocrlf=${{ matrix.autocrlf }} clone -q --depth 1 -b ${{ matrix.firebird }} https://github.com/FirebirdSQL/firebird.git firebird
+
+      - name: Install, install again, remove
+        run: |
+          hqisql/install.sh --check firebird
+          hqisql/install.sh firebird
+          hqisql/install.sh firebird | grep -q 'already installed'
+          hqisql/install.sh --remove firebird
+          test -z "$(git -C firebird status --porcelain)"
+
+  build-linux:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        firebird: [v5.0.4, v5.0-release]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: hqisql
+
+      - name: Prepare
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libtool-bin libtomcrypt1 libtomcrypt-dev libtommath1 libtommath-dev libicu-dev zlib1g-dev libzstd1
+          python3 -m pip install pyarrow
+
+      - name: Clone Firebird ${{ matrix.firebird }} and install hqisql
+        run: |
+          git clone -q --depth 1 -b ${{ matrix.firebird }} https://github.com/FirebirdSQL/firebird.git firebird
+          hqisql/install.sh firebird
+
+      - name: Build Firebird with hqisql
+        working-directory: firebird
+        run: |
+          ./autogen.sh --enable-binreloc --prefix=/opt/firebird
+          make -j4
+          make tests -j4
+          make run_tests
+
+      - name: Integration tests
+        run: |
+          firebird/gen/Release/firebird/bin/hqisql -z < /dev/null | head -2
+          python3 hqisql/tests/integration/run.py firebird/gen/Release/firebird
+
+  build-windows:
+    if: github.event_name != 'schedule'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - firebird: v5.0.4
+            os: windows-2025
+            vs: 2022
+          - firebird: v5.0-release
+            os: windows-2025
+            vs: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: hqisql
+
+      - name: Clone Firebird ${{ matrix.firebird }} and install hqisql
+        shell: cmd
+        run: |
+          git clone -q --depth 1 -b ${{ matrix.firebird }} https://github.com/FirebirdSQL/firebird.git firebird
+          for /r firebird %%i in (*.bat) do unix2dos -q "%%i"
+          call hqisql\install.bat firebird || exit /b 1
+
+      - name: Build Firebird with hqisql
+        shell: cmd
+        run: |
+          call "C:\Program Files\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=amd64
+          cd firebird\builds\win32
+          call make_icu.bat
+          call make_boot.bat
+          if "%ERRLEV%"=="1" exit /b 1
+          call make_all.bat
+          if "%ERRLEV%"=="1" exit /b 1
+
+      - name: Integration tests
+        shell: bash
+        run: |
+          python -m pip install pyarrow
+          out=$(ls -d firebird/output_x64*)
+          curl -sSL -o zstd.zip https://github.com/facebook/zstd/releases/download/v1.5.7/zstd-v1.5.7-win64.zip
+          unzip -q zstd.zip
+          cp zstd-v1.5.7-win64/dll/libzstd.dll "$out/"
+          "$out/hqisql.exe" -z < /dev/null | head -2
+          python hqisql/tests/integration/run.py "$out"

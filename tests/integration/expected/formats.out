@@ -1,0 +1,169 @@
+SET TIME ZONE 'UTC';
+CREATE DATABASE 'imp2.fdb' DEFAULT CHARACTER SET UTF8;
+CREATE TABLE PQ (ID INT PRIMARY KEY, NAME VARCHAR(20), AMOUNT NUMERIC(10,2), D DATE, TS TIMESTAMP,
+	TSU TIMESTAMP WITH TIME ZONE, FLAG BOOLEAN, DATA VARBINARY(10), U CHAR(16) CHARACTER SET OCTETS,
+	F DOUBLE PRECISION, T TIME);
+CREATE TABLE US (ID INT, U VARCHAR(36));
+CREATE TABLE B (ID INT PRIMARY KEY, NAME VARCHAR(10));
+CREATE TABLE CP (ID INT, NAME VARCHAR(30), AMOUNT NUMERIC(10,2), D DATE, TS TIMESTAMP,
+	TSU TIMESTAMP WITH TIME ZONE, FLAG BOOLEAN);
+CREATE TABLE BIG (ID INT, NAME VARCHAR(20), AMOUNT NUMERIC(12,2));
+COMMIT;
+
+-- PARQUET: all the columns by name
+IMPORT INTO PQ FROM PARQUET 't.parquet';
+SELECT * FROM PQ ORDER BY ID;
+
+          ID NAME                                AMOUNT           D                        TS                                                       TSU    FLAG DATA                 U                                                      F             T 
+============ ==================== ===================== =========== ========================= ========================================================= ======= ==================== ================================ ======================= ============= 
+           1 abc                                  12.50 2024-02-29  2024-02-29 12:34:56.7890  2024-02-29 12:34:56.7890 +00:00                           <true>  0001                 123456789ABCDEF0123456789ABCDEF0      0.1000000000000000 12:34:56.7890 
+           2 Привет                               -0.05 1899-12-31  1970-01-01 00:00:00.0000  1970-01-01 00:00:00.0000 +00:00                           <false>                      00000000000000000000000000000001 -1.000000000000000e+300 00:00:00.0000 
+           3 <null>                              <null>      <null>                    <null>                                                    <null> <null>  <null>               <null>                                            <null>        <null> 
+
+
+-- PARQUET: zstd, page v2; gzip without a dictionary; some columns
+DELETE FROM PQ;
+IMPORT INTO PQ FROM PARQUET 't_zstd.parquet';
+SELECT COUNT(*), COUNT(NAME), MAX(TSU) FROM PQ;
+
+                COUNT                 COUNT                                                       MAX 
+===================== ===================== ========================================================= 
+                    3                     2 2024-02-29 12:34:56.7890 +00:00                           
+
+DELETE FROM PQ;
+IMPORT INTO PQ (ID, NAME, U) FROM PARQUET 't_gzip.parquet' OPTIONS (SKIP = 1);
+SELECT ID, NAME, U, D FROM PQ ORDER BY ID;
+
+          ID NAME                 U                                          D 
+============ ==================== ================================ =========== 
+           2 Привет               00000000000000000000000000000001      <null> 
+           3 <null>               <null>                                <null> 
+
+
+-- UUID into a text column
+PREPARE INS_U AS INSERT INTO US (ID, U) VALUES (?, ?);
+EXEC SQL INS_U FROM PARQUET 'u.parquet';
+EXEC SQL INS_U FROM AVRO 'u.avro';
+SELECT * FROM US;
+
+          ID U                                    
+============ ==================================== 
+           1 12345678-9abc-def0-1234-56789abcdef0 
+           2 00000000-0000-0000-0000-000000000001 
+           3 <null>                               
+           5 12345678-9abc-def0-1234-56789abcdef0 
+           6 <null>                               
+
+
+-- errors: no such column, a list column, a bad option
+IMPORT INTO PQ (ID, NOPE) FROM PARQUET 't.parquet';
+IMPORT: t.parquet: column NOPE is not in the file (the file has: id, name, amount, d, ts, tsu, flag, data, u, f, t)
+After line 30 in file test.sql
+IMPORT INTO PQ FROM PARQUET 'list.parquet';
+IMPORT: list.parquet: column lst.list.element is repeated (a list or a map): such columns cannot be imported
+After line 33 in file test.sql
+IMPORT INTO PQ FROM PARQUET 't.parquet' OPTIONS (HEADER);
+IMPORT: option HEADER is not for PARQUET files
+After line 34 in file test.sql
+IMPORT INTO PQ FROM PARQUET 'missing.parquet';
+IMPORT: cannot open file <dir>/missing.parquet: No such file or directory
+After line 35 in file test.sql
+IMPORT INTO PQ FROM AVRO 't.parquet';
+IMPORT: t.parquet: not an Avro object container file
+After line 36 in file test.sql
+
+-- bad rows: a duplicate key, a long name
+IMPORT INTO B FROM PARQUET 'bad.parquet' OPTIONS (ERRORS = 5, BATCH = 2);
+bad.parquet, row 3: rejected: violation of PRIMARY or UNIQUE KEY constraint "INTEG_4" on table "B" -Problematic key value is ("ID" = 2)
+bad.parquet, row 5: rejected: Dynamic SQL Error -SQL error code = -303 -arithmetic exception, numeric overflow, or string truncation -string right truncation -expected length 10, actual 30
+3 rows imported, 2 rejected (<dir>/bad.parquet.bad)
+SELECT * FROM B ORDER BY ID;
+
+          ID NAME       
+============ ========== 
+           1 a          
+           2 b          
+           3 c          
+
+DELETE FROM B;
+IMPORT INTO B FROM PARQUET 'bad.parquet';
+bad.parquet, row 3:
+Statement failed, SQLSTATE = 23000
+violation of PRIMARY or UNIQUE KEY constraint "INTEG_4" on table "B"
+-Problematic key value is ("ID" = 2)
+After line 42 in file test.sql
+SELECT COUNT(*) FROM B;
+
+                COUNT 
+===================== 
+                    2 
+
+
+-- AVRO
+DELETE FROM PQ;
+IMPORT INTO PQ FROM AVRO 't.avro';
+SELECT * FROM PQ ORDER BY ID;
+
+          ID NAME                                AMOUNT           D                        TS                                                       TSU    FLAG DATA                 U                                                      F             T 
+============ ==================== ===================== =========== ========================= ========================================================= ======= ==================== ================================ ======================= ============= 
+           1 abc                                  12.50 2024-02-29  2024-02-29 12:34:56.7890  2024-02-29 12:34:56.7890 +00:00                           <true>  0001                 123456789ABCDEF0123456789ABCDEF0      0.1000000000000000 12:34:56.7890 
+           2 Привет                               -0.05 1899-12-31  1970-01-01 00:00:00.0000  1970-01-01 00:00:00.0000 +00:00                           <false>                      00000000000000000000000000000001 -1.000000000000000e+300 00:00:00.0000 
+           3 <null>                              <null>      <null>                    <null>                                                    <null> <null>  <null>               <null>                                            <null>        <null> 
+
+DELETE FROM PQ;
+IMPORT INTO PQ (ID, TSU, NAME) FROM AVRO 't_deflate.avro';
+SELECT ID, NAME, TSU FROM PQ ORDER BY ID;
+
+          ID NAME                                                                       TSU 
+============ ==================== ========================================================= 
+           1 abc                  2024-02-29 12:34:56.7890 +00:00                           
+           2 Привет               1970-01-01 00:00:00.0000 +00:00                           
+           3 <null>                                                                  <null> 
+
+
+-- COPY
+IMPORT INTO CP FROM COPY 't.txt';
+SELECT ID, NAME, AMOUNT, D, TS, TSU, FLAG FROM CP ORDER BY ID;
+
+          ID NAME                                          AMOUNT           D                        TS                                                       TSU    FLAG 
+============ ============================== ===================== =========== ========================= ========================================================= ======= 
+           1 abc	def                                        12.50 2024-02-29  2024-02-29 12:34:56.7890  2024-02-29 12:34:56.7890 +03:00                           <true>  
+           2 <null>                                         -0.05 1899-12-31  1970-01-01 00:00:00.0000  1970-01-01 00:00:00.0000 +00:00                           <false> 
+           3 line
+break \ A                                <null>      <null>                    <null>                                                    <null> <null>  
+
+DELETE FROM CP;
+IMPORT INTO CP (ID, NAME) FROM COPY 'h.txt' OPTIONS (HEADER, DELIMITER = '|', NULL = 'NULL');
+SELECT ID, NAME, NAME IS NULL FROM CP ORDER BY ID;
+
+          ID NAME                                   
+============ ============================== ======= 
+           1 Ж                              <false> 
+           2 <null>                         <true>  
+
+PREPARE INS_CP AS INSERT INTO CP (ID, NAME) VALUES (?, ? || '!');
+DELETE FROM CP;
+EXEC SQL INS_CP FROM COPY 'h.txt' OPTIONS (SKIP = 1, DELIMITER = '|');
+SELECT ID, NAME FROM CP ORDER BY ID;
+
+          ID NAME                           
+============ ============================== 
+           1 Ж!                             
+           2 NULL!                          
+
+
+-- many rows
+IMPORT INTO BIG FROM PARQUET 'big.parquet' OPTIONS (BATCH = 5000);
+SELECT COUNT(*), SUM(AMOUNT), MAX(NAME) FROM BIG;
+
+                COUNT                                           SUM MAX                  
+===================== ============================================= ==================== 
+               200000                                  199999000.00 row 99999            
+
+
+=== bad.parquet.bad
+id,name
+2,dup
+4,xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+=== exit code 1
