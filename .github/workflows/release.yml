@@ -1,11 +1,13 @@
 name: Release
 
 # A tag v<version> (the same as the VERSION file) builds the release
-# archives and makes a draft GitHub release with them.
+# archives, checks them and makes a draft GitHub release with them. A
+# manual run builds and checks the archives only (workflow artifacts).
 
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
 
 env:
   FIREBIRD: v5.0-release
@@ -16,7 +18,7 @@ jobs:
   linux-x64:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           path: hqisql
 
@@ -43,6 +45,15 @@ jobs:
           cp hqisql/README.md hqisql/LICENSE hqisql/NOTICE $d/
           tar czf $d.tar.gz $d
 
+      # The archive in a clean directory, with the engine of the build.
+      - name: Check the archive
+        run: |
+          python3 -m pip install pyarrow
+          mkdir check && tar xzf hqisql-*-linux-x64.tar.gz -C check
+          h=$(ls check/*/hqisql)
+          LD_LIBRARY_PATH=firebird/gen/Release/firebird/lib $h -z < /dev/null | head -2
+          python3 hqisql/tests/integration/run.py firebird/gen/Release/firebird --hqisql=$h
+
       - uses: actions/upload-artifact@v4
         with:
           name: linux-x64
@@ -51,7 +62,7 @@ jobs:
   windows-x64:
     runs-on: windows-2025
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           path: hqisql
 
@@ -88,6 +99,20 @@ jobs:
           cp hqisql/README.md hqisql/LICENSE hqisql/NOTICE $d/
           7z a -tzip $d.zip $d > /dev/null
 
+      # The archive in a clean directory: libzstd.dll from the archive,
+      # fbclient and the engine from the build. Not /dev/null: isql reads
+      # a character device with ReadConsoleW.
+      - name: Check the archive
+        shell: bash
+        run: |
+          python -m pip install pyarrow
+          out=$(ls -d firebird/output_x64*)
+          mkdir check && 7z x -ocheck hqisql-*-windows-x64.zip > /dev/null
+          h=$(ls check/*/hqisql.exe)
+          : > empty.sql
+          PATH="$out:$PATH" $h -z < empty.sql | head -2
+          python hqisql/tests/integration/run.py "$out" --hqisql=$h
+
       - uses: actions/upload-artifact@v4
         with:
           name: windows-x64
@@ -95,11 +120,12 @@ jobs:
 
   release:
     needs: [linux-x64, windows-x64]
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-22.04
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: The tag must match VERSION
         run: test "${GITHUB_REF_NAME#v}" = "$(cat VERSION)"
@@ -108,7 +134,10 @@ jobs:
         with:
           merge-multiple: true
 
+      - name: Checksums
+        run: sha256sum hqisql-* > SHA256SUMS
+
       - name: Draft release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" --draft --title "hqisql ${GITHUB_REF_NAME#v}" --notes-file CHANGELOG.md hqisql-*
+        run: gh release create "$GITHUB_REF_NAME" --draft --title "hqisql ${GITHUB_REF_NAME#v}" --notes-file CHANGELOG.md hqisql-* SHA256SUMS

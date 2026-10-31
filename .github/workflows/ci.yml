@@ -27,7 +27,7 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           path: hqisql
 
@@ -50,7 +50,7 @@ jobs:
       matrix:
         firebird: [v5.0.4, v5.0-release]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           path: hqisql
 
@@ -93,7 +93,7 @@ jobs:
             os: windows-2025
             vs: 18
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           path: hqisql
 
