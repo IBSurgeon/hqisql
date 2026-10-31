@@ -85,8 +85,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # windows-2025 has no VS 2022; VS 2026 needs v5.0-release.
           - firebird: v5.0.4
-            os: windows-2025
+            os: windows-2022
             vs: 2022
           - firebird: v5.0-release
             os: windows-2025

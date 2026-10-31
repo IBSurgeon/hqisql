@@ -74,14 +74,15 @@ run_patch() {
 		[ -f "$FB/$f" ] && tr -d '\r' < "$FB/$f" > "$w/$f"
 	done
 	tr -d '\r' < "$p" > "$TMP/p"
-	(cd "$w" && GIT_DIR=/nonexistent git apply "$@" "$TMP/p") 2> "$TMP/err"
+	(cd "$w" && GIT_DIR=/nonexistent git -c core.autocrlf=false -c core.eol=lf apply "$@" "$TMP/p") 2> "$TMP/err"
 }
 
 # copy_back <patch>: copies the patched files into the tree, with CRLF line
 # ends where the file had them.
 copy_back() {
 	for f in $(patch_files "$1"); do
-		if grep -q "$(printf '\r')" "$FB/$f"; then
+		# Not grep: the MSYS grep does not see CR.
+		if ! tr -d '\r' < "$FB/$f" | cmp -s - "$FB/$f"; then
 			awk '{ sub(/\r$/, ""); printf "%s\r\n", $0 }' "$TMP/w/$f" > "$FB/$f"
 		else
 			cat "$TMP/w/$f" > "$FB/$f"
