@@ -4,6 +4,8 @@
   demo.py data                     make the data files in work/data
   demo.py record FBDIR [SCENE...]  record the scenes (Linux: VHS, Windows: pywinpty)
   demo.py gif OS [SCENE...]        add the balloons, make docs/img/OS/LANG/*.gif
+  demo.py mp4 OS [SCENE...]        the same as MP4 (H.264, for Telegram and
+                                   other chats): work/mp4/OS/LANG/*.mp4
 """
 
 import datetime
@@ -457,7 +459,7 @@ def sheet(os_name, name, frames, times):
     out.resize((w * 3 // 5, h * len(ims) * 3 // 5)).save(dest)
 
 
-def gif(os_name, names):
+def gif(os_name, names, kind='gif'):
     rows = []
     for name in scenes(names):
         raw = WORK / 'raw' / os_name / f'{name}.mp4'
@@ -473,7 +475,9 @@ def gif(os_name, names):
             tmp.mkdir()
             band(width, background(raw, tmp), tmp / 'band.png')
             cmd = ['ffmpeg', '-v', 'error', '-y', '-i', raw, '-loop', '1', '-i', tmp / 'band.png']
-            graph = [f'[0:v]fps={FPS},pad=iw:ih+{BAND}:0:{BAND}[v0]',
+            # MP4 keeps the frame rate of the recording.
+            rate = f'fps={FPS},' if kind == 'gif' else ''
+            graph = [f'[0:v]{rate}pad=iw:ih+{BAND}:0:{BAND}[v0]',
                      '[v0][1:v]overlay=0:0:shortest=1[v1]']
             for i, (start, key) in enumerate(marks):
                 nxt = marks[i + 1][0] if i + 1 < len(marks) else real
@@ -487,9 +491,21 @@ def gif(os_name, names):
                           f'setpts=PTS-STARTPTS+{start:.2f}/TB[b{i}]',
                           f'[v{i + 1}][b{i}]overlay=x=W-w-16:y={y}:eof_action=pass:'
                           f"enable='between(t,{start:.2f},{end:.2f})'[v{i + 2}]"]
-            cmd += ['-filter_complex', ';'.join(graph), '-map', f'[v{len(marks) + 1}]',
-                    tmp / 'f%05d.png']
-            run(cmd)
+            last = f'[v{len(marks) + 1}]'
+            if kind == 'mp4':
+                # yuv420p (needs even sizes) and faststart: Telegram plays
+                # it as an animation, other players too.
+                graph.append(f'{last}scale=trunc(iw/2)*2:trunc(ih/2)*2[out]')
+                last = '[out]'
+            cmd += ['-filter_complex', ';'.join(graph), '-map', last]
+            if kind == 'mp4':
+                dest = WORK / 'mp4' / os_name / lang / f'{name}.mp4'
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                run(cmd + ['-c:v', 'libx264', '-preset', 'slow', '-crf', '20',
+                           '-pix_fmt', 'yuv420p', '-an', '-movflags', '+faststart', dest])
+                rows.append((f'{os_name}/{lang}/{name}.mp4', probe(dest)[1], dest.stat().st_size))
+                continue
+            run(cmd + [tmp / 'f%05d.png'])
             frames = sorted(glob.glob(str(tmp / 'f*.png')))
             if lang == LANGS[0]:
                 sheet(os_name, name, frames, [start + 1.2 for start, _ in marks])
@@ -511,8 +527,8 @@ def main(argv):
         data()
     elif argv[:1] == ['record'] and len(argv) >= 2:
         record(argv[1], argv[2:])
-    elif argv[:1] == ['gif'] and len(argv) >= 2:
-        gif(argv[1], argv[2:])
+    elif argv[:1] in (['gif'], ['mp4']) and len(argv) >= 2:
+        gif(argv[1], argv[2:], argv[0])
     else:
         sys.exit(__doc__)
 
