@@ -2,7 +2,7 @@
 """Builds the demo GIFs of hqisql. See README.md in this directory.
 
   demo.py data                     make the data files in work/data
-  demo.py record FBDIR [SCENE...]  record the scenes with VHS (Linux)
+  demo.py record FBDIR [SCENE...]  record the scenes (Linux: VHS, Windows: pywinpty)
   demo.py gif OS [SCENE...]        add the balloons, make docs/img/OS/LANG/*.gif
 """
 
@@ -16,6 +16,8 @@ import re
 import shutil
 import subprocess
 import sys
+import threading
+import time
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -147,30 +149,237 @@ def data():
 def record(fbdir, names):
     """Each scene in a fresh database and a fresh HOME (empty history)."""
     fbdir = Path(fbdir).resolve()
+    win = os.name == 'nt'
+    hq = fbdir / 'hqisql.exe' if win else fbdir / 'bin' / 'hqisql'
     if not (WORK / 'data' / 'sales.parquet').exists():
         data()
-    out = WORK / 'raw' / 'linux'
+    out = WORK / 'raw' / ('windows' if win else 'linux')
     out.mkdir(parents=True, exist_ok=True)
-    fb = WORK / 'fb'
-    if fb.is_symlink() or fb.exists():
-        fb.unlink()
-    fb.symlink_to(fbdir)
+    if not win:
+        fb = WORK / 'fb'
+        if fb.is_symlink() or fb.exists():
+            fb.unlink()
+        fb.symlink_to(fbdir)
     shutil.copy(HERE / 'colors-demo.txt', WORK / 'colors-demo.txt')
-    env = dict(os.environ, FIREBIRD=str(fbdir), VHS_NO_SANDBOX='true')
+    # LOCALAPPDATA: the history of hqisql on Windows.
+    env = dict(os.environ, FIREBIRD=str(fbdir), VHS_NO_SANDBOX='true',
+               LOCALAPPDATA=str(WORK / 'home'))
     env.pop('NO_COLOR', None)
     for name in scenes(names):
         for d in ('db', 'home'):
             shutil.rmtree(WORK / d, ignore_errors=True)
             (WORK / d).mkdir()
         shutil.copy(fbdir / 'examples' / 'empbuild' / 'employee.fdb', WORK / 'db')
-        run([fbdir / 'bin' / 'hqisql', '-q', '-user', 'SYSDBA', 'db/employee.fdb',
-             '-i', HERE / 'setup.sql'], cwd=WORK, env=env)
+        run([hq, '-q', '-user', 'SYSDBA', 'db/employee.fdb', '-i', HERE / 'setup.sql'],
+            cwd=WORK, env=env)
         body = (HERE / 'tapes' / f'{name}.tape').read_text().splitlines()
-        tape = WORK / f'{name}.tape'
-        tape.write_text(HEADER.format(out=f'raw/linux/{name}.mp4') + '\n'.join(body) + '\n')
-        run(['vhs', tape.name], cwd=WORK, env=env)
-        total, marks = simulate(body)
+        if win:
+            total, marks = Player(hq, env).record(body, out / f'{name}.mp4')
+        else:
+            tape = WORK / f'{name}.tape'
+            tape.write_text(HEADER.format(out=f'raw/linux/{name}.mp4') + '\n'.join(body) + '\n')
+            run(['vhs', tape.name], cwd=WORK, env=env)
+            total, marks = simulate(body)
         (out / f'{name}.json').write_text(json.dumps({'total': total, 'marks': marks}))
+
+
+# Windows: VHS does not run Windows console programs. hqisql.exe runs in a
+# pseudo console (pywinpty), the keys of the tape go to it in real time,
+# and the terminal emulator pyte draws the frames in the look of Windows
+# Terminal: Cascadia Mono and the Campbell colors.
+COLS, ROWS = 89, 24
+CELL_W, CELL_H, PAD, TITLE = 11, 22, 16, 40
+WIN_FPS = 20
+BG, FG = (12, 12, 12), (204, 204, 204)
+CAMPBELL = {
+    'black': BG, 'red': (197, 15, 31), 'green': (19, 161, 14), 'brown': (193, 156, 0),
+    'blue': (0, 55, 218), 'magenta': (136, 23, 152), 'cyan': (58, 150, 221), 'white': FG,
+    'brightblack': (118, 118, 118), 'brightred': (231, 72, 86), 'brightgreen': (22, 198, 12),
+    'brightbrown': (249, 241, 165), 'brightblue': (59, 120, 255),
+    'brightmagenta': (180, 0, 158), 'brightcyan': (97, 214, 214), 'brightwhite': (242, 242, 242),
+}
+KEYS = {'Enter': '\r', 'Tab': '\t', 'Backspace': '\x7f', 'Up': '\x1b[A', 'Down': '\x1b[B',
+        'Right': '\x1b[C', 'Left': '\x1b[D'}
+WIN_FONTS = 'C:/Windows/Fonts/'
+
+
+class Player:
+    """Plays a tape: keeps the output of hqisql.exe with the time it came,
+    the time of each mark and the hidden parts, then draws the frames."""
+
+    def __init__(self, hq, env):
+        self.hq, self.env = hq, env
+        self.out, self.marks, self.hidden = [], [], []
+
+    def start(self, extra=None):
+        from winpty import PtyProcess
+        self.p = PtyProcess.spawn([str(self.hq), '-user', 'SYSDBA', r'db\employee.fdb'],
+                                  cwd=str(WORK), env=dict(self.env, **(extra or {})),
+                                  dimensions=(ROWS, COLS))
+        threading.Thread(target=self.read, args=(self.p,), daemon=True).start()
+
+    def read(self, p):
+        while True:
+            try:
+                data = p.read(65536)
+            except EOFError:
+                return
+            self.out.append((time.perf_counter(), data))
+
+    def send(self, keys, pause):
+        self.p.write(keys)
+        time.sleep(pause)
+
+    def stop(self):
+        for _ in range(30):
+            if not self.p.isalive():
+                return
+            time.sleep(0.1)
+        self.p.terminate(force=True)
+
+    def play(self, lines):
+        # As the HEADER of the Linux tapes: the scene starts at SQL>.
+        self.start()
+        time.sleep(2)
+        self.send('\x0c', 0.3)
+        self.t0 = time.perf_counter()
+        for line in lines:
+            s = line.strip()
+            m = re.match(r'#\s*@balloon\s+(\S+)', s)
+            if m:
+                self.marks.append((time.perf_counter(), m.group(1)))
+                continue
+            if not s or s.startswith('#'):
+                continue
+            word, _, rest = s.partition(' ')
+            name, _, speed = word.partition('@')
+            speed = seconds(speed) if speed else SPEED
+            if name == 'Hide':
+                hide = time.perf_counter()
+            elif name == 'Show':
+                self.hidden.append((hide, time.perf_counter()))
+            elif name == 'Sleep':
+                time.sleep(seconds(rest))
+            elif name == 'Type':
+                text = s[s.index('"') + 1:s.rindex('"')]
+                m = re.fullmatch(r'((?:\w+=\S+ +)*)fb/bin/hqisql .*', text)
+                if m:
+                    # A new hqisql (scene 07): VAR=value in front of it.
+                    self.stop()
+                    self.start(dict(v.split('=', 1) for v in m.group(1).split()))
+                else:
+                    for c in text.replace("'data/", "'data\\"):
+                        self.send(c, speed)
+                for key in s[s.rindex('"') + 1:].split():
+                    self.send(KEYS[key], SPEED)
+            else:
+                key = chr(ord(name[-1]) - 64) if name.startswith('Ctrl+') else KEYS[name]
+                for _ in range(int(rest) if rest.isdigit() else 1):
+                    self.send(key, speed)
+        self.end = time.perf_counter()
+        self.send('\x04', 0)
+        self.stop()
+
+    def video_time(self, t):
+        return t - self.t0 - sum(min(b, t) - a for a, b in self.hidden if t > a)
+
+    def real_time(self, v):
+        t = self.t0 + v
+        for a, b in self.hidden:
+            if t >= a:
+                t += b - a
+        return t
+
+    def record(self, lines, mp4):
+        import pyte
+        self.play(lines)
+        total = self.video_time(self.end)
+        marks = [[self.video_time(t), key] for t, key in self.marks]
+        screen = pyte.Screen(COLS, ROWS)
+        stream = pyte.Stream(screen)
+        window = chrome()
+        w, h = window.size
+        ff = subprocess.Popen(['ffmpeg', '-v', 'error', '-y', '-f', 'rawvideo', '-pix_fmt', 'rgb24',
+                               '-s', f'{w}x{h}', '-r', str(WIN_FPS), '-i', '-',
+                               '-c:v', 'libx264rgb', '-qp', '0', '-preset', 'veryfast', str(mp4)],
+                              stdin=subprocess.PIPE)
+        fonts = [font([WIN_FONTS + 'CascadiaMono.ttf'], 18) for _ in range(2)]
+        fonts[1].set_variation_by_name('Bold')
+        i, n, dirty = 0, 0, True
+        while n / WIN_FPS < total:
+            t = self.real_time(n / WIN_FPS)
+            while i < len(self.out) and self.out[i][0] <= t:
+                stream.feed(self.out[i][1])
+                i, dirty = i + 1, True
+            if dirty:
+                frame, dirty = draw(screen, fonts, window), False
+            ff.stdin.write(frame.tobytes())
+            n += 1
+        ff.stdin.close()
+        if ff.wait():
+            sys.exit('ffmpeg failed')
+        return total, marks
+
+
+def chrome():
+    """An empty Windows Terminal window: the tab row with one tab."""
+    from PIL import Image, ImageDraw, ImageFont
+    w = COLS * CELL_W + 2 * PAD
+    im = Image.new('RGB', (w + w % 2, TITLE + ROWS * CELL_H + 2 * PAD), BG)
+    d = ImageDraw.Draw(im)
+    d.rectangle([0, 0, im.width, TITLE - 1], fill=(32, 32, 32))
+    d.rounded_rectangle([8, 6, 230, TITLE + 8], radius=8, fill=BG)
+    mid = 6 + (TITLE - 6) // 2
+    icons = ImageFont.truetype(WIN_FONTS + 'SegoeIcons.ttf', 10)
+    d.text((20, mid), '>_', font=font([WIN_FONTS + 'CascadiaMono.ttf'], 12), fill=FG, anchor='lm')
+    d.text((44, mid), 'hqisql', font=ImageFont.truetype(WIN_FONTS + 'segoeui.ttf', 13),
+           fill=(242, 242, 242), anchor='lm')
+    d.text((212, mid), '\ue8bb', font=icons, fill=FG, anchor='mm')
+    d.text((250, mid), '\ue710', font=icons, fill=FG, anchor='mm')
+    d.text((282, mid), '\ue70d', font=icons, fill=FG, anchor='mm')
+    for k, glyph in enumerate(('\ue921', '\ue922', '\ue8bb')):
+        d.text((im.width - 23 - 46 * (2 - k), TITLE // 2), glyph, font=icons, fill=FG, anchor='mm')
+    return im
+
+
+def color(name, default, bold):
+    if name == 'default':
+        return default
+    if bold and name in CAMPBELL and not name.startswith('bright') and name != 'black':
+        name = 'bright' + name
+    if name in CAMPBELL:
+        return CAMPBELL[name]
+    return tuple(int(name[k:k + 2], 16) for k in (0, 2, 4))
+
+
+def draw(screen, fonts, window):
+    from PIL import ImageDraw
+    im = window.copy()
+    d = ImageDraw.Draw(im)
+    ascent, descent = fonts[0].getmetrics()
+    base = (CELL_H - ascent - descent) // 2 + ascent
+    for y in range(ROWS):
+        row, x = screen.buffer[y], 0
+        while x < COLS:
+            c = row[x]
+            style = (c.fg, c.bg, c.bold, c.reverse)
+            end = x + 1
+            while end < COLS and (row[end].fg, row[end].bg, row[end].bold, row[end].reverse) == style:
+                end += 1
+            fg, bg = color(c.fg, FG, c.bold), color(c.bg, BG, False)
+            if c.reverse:
+                fg, bg = bg, fg
+            left, top = PAD + x * CELL_W, TITLE + PAD + y * CELL_H
+            if bg != BG:
+                d.rectangle([left, top, PAD + end * CELL_W - 1, top + CELL_H - 1], fill=bg)
+            text = ''.join(row[k].data for k in range(x, end))
+            if text.strip():
+                d.text((left, top + base), text, font=fonts[c.bold], fill=fg, anchor='ls')
+            x = end
+    if not screen.cursor.hidden:
+        left, top = PAD + screen.cursor.x * CELL_W, TITLE + PAD + screen.cursor.y * CELL_H
+        d.rectangle([left, top + 1, left + 1, top + CELL_H - 2], fill=(242, 242, 242))
+    return im
 
 
 def font(fonts, size):
