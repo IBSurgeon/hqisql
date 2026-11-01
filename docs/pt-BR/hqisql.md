@@ -613,7 +613,8 @@ O que a instalação altera na árvore do Firebird:
 ### Execução
 
 - O hqisql precisa do fbclient do Firebird 5. O servidor pode ser Firebird
-  3.0 ou mais novo.
+  3.0 ou mais novo. O CI também executa os testes de integração em
+  servidores Firebird 3 e 4.
 - Arquivos Parquet e Avro comprimidos com zstd precisam da libzstd. Linux: o
   pacote do sistema (por exemplo `libzstd1`). Windows: `libzstd.dll` ao lado
   de `hqisql.exe`; o arquivo de release já inclui essa biblioteca.

@@ -78,6 +78,33 @@ jobs:
           firebird/gen/Release/firebird/bin/hqisql -z < /dev/null | head -2
           python3 hqisql/tests/integration/run.py firebird/gen/Release/firebird
 
+      # The same cases over TCP on the official Firebird 3 and 4 images.
+      # Firebird 3 does not know some statements of the cases: its output
+      # is in expected/<case>.fb3.out.
+      - name: Integration tests on Firebird 3 and 4 servers
+        if: matrix.firebird == 'v5.0-release'
+        env:
+          ISC_PASSWORD: masterkey
+        run: |
+          fb=$PWD/firebird/gen/Release/firebird
+          export LD_LIBRARY_PATH=$fb/lib FIREBIRD=$fb
+          for v in 3 4; do
+            docker run -d --name fb$v -p 305$v:3050 -e FIREBIRD_ROOT_PASSWORD=$ISC_PASSWORD firebirdsql/firebird:$v
+          done
+          for v in 3 4; do
+            db=localhost/305$v:/var/lib/firebird/data
+            sql="CREATE DATABASE '$db/probe.fdb';
+              SELECT CAST(RDB\$GET_CONTEXT('SYSTEM', 'ENGINE_VERSION') AS VARCHAR(20)) AS SERVER
+              FROM RDB\$DATABASE; DROP DATABASE;"
+            # Wait for the server: the container needs some seconds.
+            for i in $(seq 60); do
+              out=$(echo "$sql" | $fb/bin/hqisql -q -bail -user SYSDBA 2>&1) && break
+              sleep 2
+            done
+            echo "$out"
+            python3 hqisql/tests/integration/run.py $fb --server=$db --tag=fb$v
+          done
+
   build-windows:
     if: github.event_name != 'schedule'
     runs-on: ${{ matrix.os }}

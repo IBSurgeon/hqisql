@@ -26,7 +26,9 @@ More demos: [user guide](docs/hqisql.md). Portuguese captions: [guia](docs/pt-BR
 
 - Build: Firebird 5.0 source tree. Tested with `v5.0.4` and `v5.0-release`.
 - Client: the fbclient of Firebird 5.
-- Server: Firebird 3.0 or newer.
+- Server: Firebird 3.0 or newer. CI runs the integration tests on Firebird
+  3 and 4 servers too (Docker images `firebirdsql/firebird:3` and `:4`).
+- Firebird 2.5 is not supported.
 
 ## Download
 
