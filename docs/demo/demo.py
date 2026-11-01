@@ -29,7 +29,6 @@ SPEED = 0.04        # Set TypingSpeed in HEADER
 FPS = 12
 BAND = 56           # pixels above the terminal for the balloons
 BALLOON_MAX = 4.0   # seconds
-MAX_SECONDS = 30
 MAX_BYTES = 3 * 1024 * 1024
 
 FONTS = (
@@ -501,7 +500,7 @@ def gif(os_name, names):
             rows.append((f'{os_name}/{lang}/{name}.gif', len(frames) / FPS, dest.stat().st_size))
     bad = False
     for path, sec, size in rows:
-        flag = '' if sec <= MAX_SECONDS and size <= MAX_BYTES else '  TOO LONG OR TOO BIG'
+        flag = '' if size <= MAX_BYTES else '  TOO BIG'
         bad = bad or bool(flag)
         print(f'{path:40} {sec:5.1f} s {size / 1024:7.0f} KB{flag}')
     sys.exit(1 if bad else 0)

@@ -1,7 +1,7 @@
 # Demo GIFs
 
 The scripts in this directory make the GIFs in `docs/img/<os>/<lang>/`.
-Each GIF shows one feature, is shorter than 30 s and has the feature name
+Each GIF shows one feature (00-overview: several) and has the feature name
 in a balloon (English and Portuguese).
 
 ## Files
@@ -27,7 +27,7 @@ python3 demo.py gif linux         # docs/img/linux/{en,pt-BR}/*.gif
 
 Give scene names to make only these scenes (`demo.py record FBDIR
 01-editor`). `demo.py gif` prints the length and the size of each GIF and
-fails if a GIF is longer than 30 s or bigger than 3 MB. Check
+fails if a GIF is bigger than 3 MB. Check
 `work/sheets/<os>/*.png`: one frame for each balloon and the last frame.
 
 ## Windows
