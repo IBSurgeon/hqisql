@@ -1,0 +1,10 @@
+# The color scheme of scene 07 (HQISQL_COLORS).
+command    = brightmagenta bold
+reserved   = rgb(5,3,0) bold
+keyword    = rgb(5,4,1)
+string     = brightcyan
+quoted     = brightcyan
+number     = rgb(1,5,1)
+comment    = gray(12)
+param      = brightred
+terminator = yellow bold
