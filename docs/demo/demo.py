@@ -5,7 +5,8 @@
   demo.py record FBDIR [SCENE...]  record the scenes (Linux: VHS, Windows: pywinpty)
   demo.py gif OS [SCENE...]        add the balloons, make docs/img/OS/LANG/*.gif
   demo.py mp4 OS [SCENE...]        the same as MP4 (H.264, for Telegram and
-                                   other chats): work/mp4/OS/LANG/*.mp4
+                                   other chats), only 00-overview when no
+                                   scene is given: docs/img/OS/LANG/*.mp4
 """
 
 import datetime
@@ -499,7 +500,7 @@ def gif(os_name, names, kind='gif'):
                 last = '[out]'
             cmd += ['-filter_complex', ';'.join(graph), '-map', last]
             if kind == 'mp4':
-                dest = WORK / 'mp4' / os_name / lang / f'{name}.mp4'
+                dest = IMG / os_name / lang / f'{name}.mp4'
                 dest.parent.mkdir(parents=True, exist_ok=True)
                 run(cmd + ['-c:v', 'libx264', '-preset', 'slow', '-crf', '20',
                            '-pix_fmt', 'yuv420p', '-an', '-movflags', '+faststart', dest])
@@ -528,7 +529,8 @@ def main(argv):
     elif argv[:1] == ['record'] and len(argv) >= 2:
         record(argv[1], argv[2:])
     elif argv[:1] in (['gif'], ['mp4']) and len(argv) >= 2:
-        gif(argv[1], argv[2:], argv[0])
+        names = argv[2:] or (['00-overview'] if argv[0] == 'mp4' else [])
+        gif(argv[1], names, argv[0])
     else:
         sys.exit(__doc__)
 

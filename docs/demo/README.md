@@ -30,9 +30,9 @@ Give scene names to make only these scenes (`demo.py record FBDIR
 fails if a GIF is bigger than 3 MB. Check
 `work/sheets/<os>/*.png`: one frame for each balloon and the last frame.
 
-`demo.py mp4 linux` (or `windows`) makes the same videos as MP4 in
-`work/mp4/<os>/<lang>/`: H.264, yuv420p, no sound, the frame rate of the
-recording. Use them in Telegram and other chats: these play an MP4 without
+`demo.py mp4 linux` (or `windows`) makes `00-overview` as MP4 in
+`docs/img/<os>/<lang>/` (give scene names for other scenes): H.264,
+yuv420p, no sound, the frame rate of the recording. Use them in Telegram and other chats: these play an MP4 without
 sound as an animation, and a link to a GitHub page shows only a static
 picture.
 
