@@ -1,5 +1,10 @@
 # hqisql
 
+> **Quick start:** unpack the [release archive](https://github.com/IBSurgeon/hqisql/releases),
+> copy `hqisql` (Linux) or `hqisql.exe` and `libzstd.dll` (Windows) to the
+> directory of `isql` in your Firebird 5 installation, and use `hqisql`
+> instead of `isql`.
+
 hqisql is an interactive console for Firebird. It is built from the same
 source code as isql and accepts the same commands and command line options.
 hqisql adds a line editor based on replxx, syntax highlighting, Tab
