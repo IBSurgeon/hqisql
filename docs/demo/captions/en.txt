@@ -1,5 +1,7 @@
 # Balloon texts: key = text. The keys are the "# @balloon" marks in tapes/.
-editor_hl = Multi-line editor, highlighting
+newline = Ctrl-J: new line, ↑: line up
+history_ml = ↑: the whole statement again
+edit_any = Edit any line, Enter runs it
 editor = Multi-line editor
 highlight = Syntax highlighting
 ctrlc = Ctrl-C clears the statement

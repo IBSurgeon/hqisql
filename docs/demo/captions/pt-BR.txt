@@ -1,5 +1,7 @@
 # Textos dos balões: chave = texto. As chaves são as marcas "# @balloon" em tapes/.
-editor_hl = Editor multilinha, realce
+newline = Ctrl-J: nova linha, ↑: linha acima
+history_ml = ↑: o comando inteiro de novo
+edit_any = Edite qualquer linha, Enter executa
 editor = Editor multilinha
 highlight = Realce de sintaxe
 ctrlc = Ctrl-C limpa o comando

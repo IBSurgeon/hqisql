@@ -66,6 +66,10 @@ Multi-line input:
 
 - Enter continues the statement until the terminator. The prompt changes to
   `CON>`.
+- Ctrl-J (or Alt-Enter) starts a new line in the same input. ↑ and ↓ move
+  between its lines, so you can go back and change a line above. On the
+  first line, ↑ shows the previous history entry. Enter on any line runs the
+  whole statement.
 - `SET TERM` works. The highlighting uses the new terminator.
 
 Paste from the clipboard:

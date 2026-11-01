@@ -70,6 +70,10 @@ Teclas:
 Entrada de várias linhas:
 
 - Enter continua o comando até o terminador. O prompt muda para `CON>`.
+- Ctrl-J (ou Alt-Enter) começa uma nova linha na mesma entrada. ↑ e ↓ movem
+  o cursor entre as linhas, então você pode voltar e mudar uma linha acima.
+  Na primeira linha, ↑ mostra a entrada anterior do histórico. Enter em
+  qualquer linha executa o comando inteiro.
 - `SET TERM` funciona. O realce usa o novo terminador.
 
 Colar da área de transferência:

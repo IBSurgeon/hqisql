@@ -11,7 +11,7 @@ hqisql adds a line editor based on replxx, syntax highlighting, Tab
 completion and new commands to load data from files. Scripts that do not use
 the new commands give the same output as in isql.
 
-![hqisql: editor, Tab completion, SET PREVIEW, IMPORT INTO](docs/img/linux/en/00-overview.gif)
+![hqisql: Tab completion, alias columns, multi-line editing, history](docs/img/linux/en/00-overview.gif)
 
 More demos: [user guide](docs/hqisql.md). Portuguese captions: [guia](docs/pt-BR/hqisql.md).
 
