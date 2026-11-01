@@ -24,11 +24,21 @@ More demos: [user guide](docs/hqisql.md). Portuguese captions: [guia](docs/pt-BR
 
 ## Supported Firebird versions
 
-- Build: Firebird 5.0 source tree. Tested with `v5.0.4` and `v5.0-release`.
-- Client: the fbclient of Firebird 5.
-- Server: Firebird 3.0 or newer. CI runs the integration tests on Firebird
-  3 and 4 servers too (Docker images `firebirdsql/firebird:3` and `:4`).
+| | Versions | Tested in CI |
+|---|---|---|
+| Build | Firebird 5.0 source tree | `v5.0.4`, `v5.0-release` (Linux, Windows) |
+| Client | fbclient of Firebird 5 | the same builds |
+| Server | Firebird 3.0, 4.0, 5.0 | 5.0 embedded; 3.0.14 and 4.0.7 over TCP |
+
+- There is no build for the Firebird 3 or 4 source tree. To work with a
+  Firebird 3 or 4 server, run hqisql with the Firebird 5 client: it connects
+  to these servers over TCP.
+- Firebird 3 has no `IBatch`: `IMPORT INTO` and `EXEC SQL ... FROM` send one
+  record at a time, so the load is slower. The result is the same.
 - Firebird 2.5 is not supported.
+
+CI runs the integration tests on the Docker images `firebirdsql/firebird:3`
+and `firebirdsql/firebird:4`.
 
 ## Download
 
