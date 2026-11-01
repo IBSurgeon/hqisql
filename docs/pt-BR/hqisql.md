@@ -55,6 +55,18 @@ Teclas:
 
 ## Editor de linha
 
+![Editor de várias linhas com realce e Ctrl-C](../img/linux/pt-BR/01-editor.gif)
+
+![Histórico de comandos e busca com Ctrl-R](../img/linux/pt-BR/03-history.gif)
+
+<details><summary>Windows</summary>
+
+![Editor de várias linhas com realce e Ctrl-C](../img/windows/pt-BR/01-editor.gif)
+
+![Histórico de comandos e busca com Ctrl-R](../img/windows/pt-BR/03-history.gif)
+
+</details>
+
 Entrada de várias linhas:
 
 - Enter continua o comando até o terminador. O prompt muda para `CON>`.
@@ -127,6 +139,14 @@ de cores").
 
 ## Completamento com Tab
 
+![Completamento com Tab, colunas após um alias, dica cinza](../img/linux/pt-BR/02-completion.gif)
+
+<details><summary>Windows</summary>
+
+![Completamento com Tab, colunas após um alias, dica cinza](../img/windows/pt-BR/02-completion.gif)
+
+</details>
+
 - Completamento com Tab e dicas enquanto você digita: palavras-chave, e
   tabelas, colunas, procedures, functions, generators e packages do banco de
   dados conectado. O hqisql carrega os nomes em segundo plano.
@@ -166,6 +186,14 @@ console com code page 65001, geram os mesmos bytes que o isql. O mesmo vale
 no Linux (UTF-8, `-ch UTF8`).
 
 ## PREPARE / EXEC SQL / DEALLOCATE
+
+![PREPARE, EXEC SQL e EXEC SQL ... FROM um arquivo CSV](../img/linux/pt-BR/06-exec-sql.gif)
+
+<details><summary>Windows</summary>
+
+![PREPARE, EXEC SQL e EXEC SQL ... FROM um arquivo CSV](../img/windows/pt-BR/06-exec-sql.gif)
+
+</details>
 
 Estes comandos existem apenas no hqisql. Eles funcionam no modo interativo e
 em scripts (`-i`, `INPUT`, pipe).
@@ -211,6 +239,14 @@ Como o hqisql executa o comando:
   F", como o isql faz após um erro de comando.
 
 ## Carga de arquivos: EXEC SQL ... FROM e IMPORT INTO
+
+![IMPORT INTO de CSV e Parquet](../img/linux/pt-BR/05-import.gif)
+
+<details><summary>Windows</summary>
+
+![IMPORT INTO de CSV e Parquet](../img/windows/pt-BR/05-import.gif)
+
+</details>
 
 Estes comandos existem apenas no hqisql. Eles funcionam no modo interativo e
 em scripts. A sintaxe `FROM CSV` vem de
@@ -414,6 +450,14 @@ de `-pag 0`, o `SET PAGELENGTH 0` não desliga o `SET HEADING`.
 
 ## SET PREVIEW
 
+![Saída simples do isql e SET PREVIEW](../img/linux/pt-BR/04-preview.gif)
+
+<details><summary>Windows</summary>
+
+![Saída simples do isql e SET PREVIEW](../img/windows/pt-BR/04-preview.gif)
+
+</details>
+
 Este comando existe apenas no hqisql. Ele liga o modo de pré-visualização.
 O hqisql imprime o resultado da consulta como uma tabela compacta, sem
 quebrar os cabeçalhos e as linhas:
@@ -448,6 +492,14 @@ points; caso contrário, em bytes). O `SET` mostra o estado atual
 (`Preview: ON, 20 rows`).
 
 ## Esquema de cores
+
+![Cores padrão e um esquema de cores de HQISQL_COLORS](../img/linux/pt-BR/07-colors.gif)
+
+<details><summary>Windows</summary>
+
+![Cores padrão e um esquema de cores de HQISQL_COLORS](../img/windows/pt-BR/07-colors.gif)
+
+</details>
 
 Um arquivo de texto opcional define as cores do realce. O hqisql lê esse
 arquivo uma vez na inicialização (apenas quando o editor está ativo e

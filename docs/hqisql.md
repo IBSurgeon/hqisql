@@ -50,6 +50,18 @@ Keys:
 
 ## Line editor
 
+![Multi-line editor with highlighting and Ctrl-C](img/linux/en/01-editor.gif)
+
+![Statement history and Ctrl-R search](img/linux/en/03-history.gif)
+
+<details><summary>Windows</summary>
+
+![Multi-line editor with highlighting and Ctrl-C](img/windows/en/01-editor.gif)
+
+![Statement history and Ctrl-R search](img/windows/en/03-history.gif)
+
+</details>
+
 Multi-line input:
 
 - Enter continues the statement until the terminator. The prompt changes to
@@ -121,6 +133,14 @@ You can change the colors with a color scheme file (see "Color scheme").
 
 ## Tab completion
 
+![Tab completion, columns after an alias, gray hint](img/linux/en/02-completion.gif)
+
+<details><summary>Windows</summary>
+
+![Tab completion, columns after an alias, gray hint](img/windows/en/02-completion.gif)
+
+</details>
+
 - Tab completion and hints while you type: keywords, and tables, columns,
   procedures, functions, generators and packages of the connected database.
   hqisql loads the names in the background.
@@ -159,6 +179,14 @@ page 65001, give the same bytes as isql. The same is true on Linux (UTF-8,
 `-ch UTF8`).
 
 ## PREPARE / EXEC SQL / DEALLOCATE
+
+![PREPARE, EXEC SQL and EXEC SQL ... FROM a CSV file](img/linux/en/06-exec-sql.gif)
+
+<details><summary>Windows</summary>
+
+![PREPARE, EXEC SQL and EXEC SQL ... FROM a CSV file](img/windows/en/06-exec-sql.gif)
+
+</details>
 
 These commands are only in hqisql. They work interactively and in scripts
 (`-i`, `INPUT`, pipe).
@@ -203,6 +231,14 @@ How hqisql runs the statement:
   isql does after a statement error.
 
 ## Loading files: EXEC SQL ... FROM and IMPORT INTO
+
+![IMPORT INTO from CSV and Parquet](img/linux/en/05-import.gif)
+
+<details><summary>Windows</summary>
+
+![IMPORT INTO from CSV and Parquet](img/windows/en/05-import.gif)
+
+</details>
 
 These commands are only in hqisql. They work interactively and in scripts.
 The `FROM CSV` syntax comes from
@@ -402,6 +438,14 @@ current value (`Page length:`). The command is listed in `HELP SET`. Unlike
 
 ## SET PREVIEW
 
+![Plain isql output and SET PREVIEW](img/linux/en/04-preview.gif)
+
+<details><summary>Windows</summary>
+
+![Plain isql output and SET PREVIEW](img/windows/en/04-preview.gif)
+
+</details>
+
 This command is only in hqisql. It switches on the preview mode. hqisql
 prints the query result as a compact table, without wrapping the headers and
 rows:
@@ -435,6 +479,14 @@ Widths are counted in characters (for a UTF8 connection, in code points;
 otherwise in bytes). `SET` shows the current state (`Preview: ON, 20 rows`).
 
 ## Color scheme
+
+![Built-in colors and a color scheme from HQISQL_COLORS](img/linux/en/07-colors.gif)
+
+<details><summary>Windows</summary>
+
+![Built-in colors and a color scheme from HQISQL_COLORS](img/windows/en/07-colors.gif)
+
+</details>
 
 An optional text file sets the highlighting colors. hqisql reads it once at
 startup (only when the editor is active and `NO_COLOR` is not set):

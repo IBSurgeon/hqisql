@@ -6,6 +6,10 @@ hqisql adds a line editor based on replxx, syntax highlighting, Tab
 completion and new commands to load data from files. Scripts that do not use
 the new commands give the same output as in isql.
 
+![hqisql: editor, Tab completion, SET PREVIEW, IMPORT INTO](docs/img/linux/en/00-overview.gif)
+
+More demos: [user guide](docs/hqisql.md). Portuguese captions: [guia](docs/pt-BR/hqisql.md).
+
 ## Features
 
 - Multi-line line editor with statement history.
@@ -38,6 +42,12 @@ archive with `SHA256SUMS` from the same release.
 - Windows (`hqisql-<version>-fb5-windows-x64.zip`): copy `hqisql.exe` and
   `libzstd.dll` to the directory of a Firebird 5 installation (with
   `fbclient.dll`).
+
+<details><summary>hqisql on Windows</summary>
+
+![hqisql on Windows](docs/img/windows/en/00-overview.gif)
+
+</details>
 
 ## Building
 
