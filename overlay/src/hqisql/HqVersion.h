@@ -25,6 +25,6 @@
 #ifndef FB_HQISQL_HQ_VERSION_H
 #define FB_HQISQL_HQ_VERSION_H
 
-#define HQISQL_VERSION "1.0.0"
+#define HQISQL_VERSION "1.1.0"
 
 #endif // FB_HQISQL_HQ_VERSION_H

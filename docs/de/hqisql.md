@@ -1,6 +1,6 @@
 # hqisql Benutzerhandbuch
 
-> Übersetzt aus dem englischen Handbuch, Version 1.0.0.
+> Übersetzt aus dem englischen Handbuch, Version 1.1.0.
 
 hqisql ist eine interaktive Konsole für Firebird. Sie wird aus demselben
 Quellcode wie isql gebaut und akzeptiert dieselben Befehle und
@@ -40,7 +40,7 @@ ergänzt diese:
   Verlaufsdatei.
 - `NO_COLOR`: keine Hervorhebung. `HQISQL_COLORS=<file>`: Ihr eigenes
   Farbschema (siehe "Farbschema").
-- `-z` gibt `hqisql 1.0.0` aus, danach die Versionszeile von isql.
+- `-z` gibt `hqisql 1.1.0` aus, danach die Versionszeile von isql.
 
 Tasten:
 
@@ -579,7 +579,7 @@ Was die Installation im Firebird-Baum ändert:
   das Systempaket (zum Beispiel `libzstd1`). Windows: `libzstd.dll` neben
   `hqisql.exe`; das Release-Archiv enthält sie.
 - zlib wird mit Firebird geliefert.
-- `hqisql -z` gibt `hqisql 1.0.0` aus, danach die Versionszeile von isql.
+- `hqisql -z` gibt `hqisql 1.1.0` aus, danach die Versionszeile von isql.
 
 ## Integrationstests
 

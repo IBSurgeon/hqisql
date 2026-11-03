@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.1.0 (2026-11-03)
 
 - CI runs the integration tests on Firebird 3 and 4 servers over TCP too
   (`tests/integration/run.py --server`).

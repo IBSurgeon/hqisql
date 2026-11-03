@@ -35,7 +35,7 @@ adds these:
   history file.
 - `NO_COLOR`: no highlighting. `HQISQL_COLORS=<file>`: your own color scheme
   (see "Color scheme").
-- `-z` prints `hqisql 1.0.0`, then the isql version line.
+- `-z` prints `hqisql 1.1.0`, then the isql version line.
 
 Keys:
 
@@ -608,7 +608,7 @@ What the install changes in the Firebird tree:
   system package (for example `libzstd1`). Windows: `libzstd.dll` next to
   `hqisql.exe`; the release archive includes it.
 - zlib comes with Firebird.
-- `hqisql -z` prints `hqisql 1.0.0`, then the isql version line.
+- `hqisql -z` prints `hqisql 1.1.0`, then the isql version line.
 
 ## Integration tests
 
