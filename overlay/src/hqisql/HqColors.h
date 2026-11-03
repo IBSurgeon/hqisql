@@ -60,6 +60,7 @@ public:
 		COMMAND,		// isql command words: SET, STATS, ON, SHOW, TABLE
 		RESERVED,		// reserved words: SELECT, FROM
 		KEYWORD,		// non-reserved keywords: NAME, TYPE
+		TABLE,			// tables and views of the database: EMPLOYEE, RDB$RELATIONS
 		STRING,			// 'string'
 		QUOTED,			// "quoted identifier"
 		NUMBER,

@@ -4,6 +4,10 @@
 
 - CI runs the integration tests on Firebird 3 and 4 servers over TCP too
   (`tests/integration/run.py --server`).
+- Table and view names have their own color (`table`, cyan by default).
+  The names come from `RDB$RELATIONS`, system tables too.
+- Completion after `FROM`, `JOIN` and `UPDATE` offers the system tables
+  too, after the tables of the user.
 
 ## 1.0.0 (2026-10-31)
 

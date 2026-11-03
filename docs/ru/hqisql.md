@@ -95,6 +95,8 @@ Ctrl-C:
 - зарезервированные слова: ярко-синий;
 - прочие ключевые слова: синий, чтобы `NAME`, `TYPE`, `VALUE` как имена
   колонок не выделялись;
+- имена таблиц и вьюх: бирюзовый (cyan). Это все имена из `RDB$RELATIONS`,
+  системные таблицы тоже (`RDB$RELATIONS`, `MON$ATTACHMENTS`);
 - команды isql: жёлтый. Это само слово команды (`SHOW`, `HELP`,
   `INPUT`/`IN`, `OUTPUT`/`OUT`, `EDIT`, `SHELL`, `EXIT`, ...), опция `SET`
   (`STATS`, `AUTODDL`, `TERM`, `BLOB`, ...), объект `SHOW` (`TABLES`, `DB`,
@@ -137,8 +139,8 @@ Ctrl-C:
   Поэтому `SELECT E.` + Tab работает и тогда, когда `FROM EMPLOYEE E` уже
   написан правее курсора. Другие операторы той же строки не учитываются.
 - **Позиция табличной ссылки.** После `FROM`, `JOIN` и `UPDATE` hqisql
-  показывает только таблицы и вьюхи. Системные таблицы (`RDB$`, `MON$`,
-  `SEC$`, `TMP$`) скрыты.
+  показывает только таблицы и вьюхи: сначала таблицы пользователя, затем
+  системные таблицы (`RDB$`, `MON$`, `SEC$`, `TMP$`).
 
 ## Кодировка
 
@@ -443,6 +445,7 @@ SET PREVIEW OFF;
 command    = yellow            # isql commands and their options: SET STATS ON, SHOW TABLE
 reserved   = brightblue bold   # reserved words
 keyword    = blue              # other keywords (NAME, TYPE)
+table      = cyan              # tables and views (EMPLOYEE, RDB$RELATIONS)
 string     = rgb(0,5,0)        # 'string'
 quoted     = brightmagenta     # "quoted name"
 number     = 213               # terminal palette index 0..255

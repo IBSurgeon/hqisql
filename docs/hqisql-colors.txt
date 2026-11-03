@@ -17,6 +17,7 @@
 command    = yellow          # isql commands and their options: SET STATS ON, SHOW TABLE
 reserved   = brightblue      # reserved words: SELECT, FROM, WHERE
 keyword    = blue            # other keywords: NAME, TYPE, COUNT
+table      = cyan            # tables and views: EMPLOYEE, RDB$RELATIONS
 string     = brightgreen     # 'string'
 quoted     = brightmagenta   # "quoted identifier"
 number     = magenta

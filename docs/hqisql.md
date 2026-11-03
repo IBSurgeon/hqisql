@@ -114,6 +114,8 @@ The built-in colors:
 - reserved words: bright blue;
 - other keywords: blue, so that `NAME`, `TYPE`, `VALUE` as column names do
   not stand out;
+- table and view names: cyan. These are all names of `RDB$RELATIONS`,
+  system tables too (`RDB$RELATIONS`, `MON$ATTACHMENTS`);
 - isql commands: yellow. This covers the command word (`SHOW`, `HELP`,
   `INPUT`/`IN`, `OUTPUT`/`OUT`, `EDIT`, `SHELL`, `EXIT`, ...), the `SET`
   option (`STATS`, `AUTODDL`, `TERM`, `BLOB`, ...), the `SHOW` object
@@ -166,8 +168,8 @@ You can change the colors with a color scheme file (see "Color scheme").
   already written to the right of the cursor. Other statements on the same
   line are not used.
 - **Table position.** After `FROM`, `JOIN` and `UPDATE`, hqisql shows only
-  tables and views. System tables (`RDB$`, `MON$`, `SEC$`, `TMP$`) are
-  hidden.
+  tables and views: first the tables of the user, then the system tables
+  (`RDB$`, `MON$`, `SEC$`, `TMP$`).
 
 ## Character sets
 
@@ -510,6 +512,7 @@ element; `#` starts a comment:
 command    = yellow            # isql commands and their options: SET STATS ON, SHOW TABLE
 reserved   = brightblue bold   # reserved words
 keyword    = blue              # other keywords (NAME, TYPE)
+table      = cyan              # tables and views (EMPLOYEE, RDB$RELATIONS)
 string     = rgb(0,5,0)        # 'string'
 quoted     = brightmagenta     # "quoted name"
 number     = 213               # terminal palette index 0..255

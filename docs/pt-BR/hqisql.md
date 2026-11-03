@@ -119,6 +119,8 @@ As cores internas:
 - palavras reservadas: azul claro;
 - outras palavras-chave: azul, para que `NAME`, `TYPE`, `VALUE` como nomes
   de colunas não chamem atenção;
+- nomes de tabelas e views: ciano. São todos os nomes de `RDB$RELATIONS`,
+  também as tabelas de sistema (`RDB$RELATIONS`, `MON$ATTACHMENTS`);
 - comandos do isql: amarelo. Isso inclui a palavra do comando (`SHOW`,
   `HELP`, `INPUT`/`IN`, `OUTPUT`/`OUT`, `EDIT`, `SHELL`, `EXIT`, ...), a
   opção do `SET` (`STATS`, `AUTODDL`, `TERM`, `BLOB`, ...), o objeto do
@@ -173,8 +175,8 @@ de cores").
   funciona também quando `FROM EMPLOYEE E` já está escrito à direita do
   cursor. Outros comandos na mesma linha não são usados.
 - **Posição de tabela.** Depois de `FROM`, `JOIN` e `UPDATE`, o hqisql
-  mostra apenas tabelas e views. As tabelas de sistema (`RDB$`, `MON$`,
-  `SEC$`, `TMP$`) ficam ocultas.
+  mostra apenas tabelas e views: primeiro as tabelas do usuário, depois as
+  tabelas de sistema (`RDB$`, `MON$`, `SEC$`, `TMP$`).
 
 ## Conjuntos de caracteres
 
@@ -524,6 +526,7 @@ para cada elemento; `#` inicia um comentário:
 command    = yellow            # isql commands and their options: SET STATS ON, SHOW TABLE
 reserved   = brightblue bold   # reserved words
 keyword    = blue              # other keywords (NAME, TYPE)
+table      = cyan              # tables and views (EMPLOYEE, RDB$RELATIONS)
 string     = rgb(0,5,0)        # 'string'
 quoted     = brightmagenta     # "quoted name"
 number     = 213               # terminal palette index 0..255

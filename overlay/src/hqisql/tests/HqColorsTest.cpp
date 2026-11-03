@@ -48,6 +48,7 @@ BOOST_AUTO_TEST_CASE(DefaultSchemeTest)
 	BOOST_TEST(s.color(ColorScheme::COMMAND) == 11u);		// yellow
 	BOOST_TEST(s.color(ColorScheme::RESERVED) == 12u);		// brightblue
 	BOOST_TEST(s.color(ColorScheme::KEYWORD) == 4u);		// blue
+	BOOST_TEST(s.color(ColorScheme::TABLE) == 6u);			// cyan
 	BOOST_TEST(s.color(ColorScheme::STRING) == 10u);		// brightgreen
 	BOOST_TEST(s.color(ColorScheme::COMMENT) == 8u);		// gray
 	BOOST_TEST(s.color(ColorScheme::TERMINATOR) == 9u);		// brightred

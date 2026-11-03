@@ -40,7 +40,7 @@ const char* const COLOR_NAMES[16] =
 
 const char* const ELEMENT_NAMES[ColorScheme::ELEMENT_COUNT] =
 {
-	"command", "reserved", "keyword", "string", "quoted", "number", "comment",
+	"command", "reserved", "keyword", "table", "string", "quoted", "number", "comment",
 	"param", "terminator", "hint", "completion"
 };
 
@@ -197,6 +197,7 @@ ColorScheme::ColorScheme()
 	colors[COMMAND] = 11;		// yellow
 	colors[RESERVED] = 12;		// brightblue
 	colors[KEYWORD] = 4;		// blue
+	colors[TABLE] = 6;			// cyan
 	colors[STRING] = 10;		// brightgreen
 	colors[QUOTED] = 13;		// brightmagenta
 	colors[NUMBER] = 5;			// magenta

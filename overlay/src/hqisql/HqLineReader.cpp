@@ -476,6 +476,10 @@ Replxx::Color mapColor(const Hq::Lexer::HighlightRange& r, const std::string& in
 		if (Hq::isReservedWord(word.data(), word.size()))
 			return colorOf(Hq::ColorScheme::RESERVED);
 
+		// Before the keywords: a table can have a keyword name (NAME).
+		if (Hq::findTable(word))
+			return colorOf(Hq::ColorScheme::TABLE);
+
 		// Non-reserved keywords (NAME, TYPE, ...) are often names: dimmer.
 		if (Hq::isKeyword(word.data(), word.size()))
 			return colorOf(Hq::ColorScheme::KEYWORD);
@@ -519,6 +523,8 @@ void highlightCallback(const std::string& input, Replxx::colors_t& colors)
 
 	if (noColor() || colors.empty())
 		return;
+
+	Hq::syncMetadata();	// the table names
 
 	// Lex the previous lines of the statement too: a string or a comment
 	// opened on a CON> line continues on this one. Only the ranges inside
@@ -596,8 +602,8 @@ std::string upperAscii(std::string s)
 	return s;
 }
 
-// System tables are rarely typed by hand - keep them out of the
-// table-reference completion.
+// The system tables (RDB$, MON$, SEC$, TMP$): offered after the tables
+// of the user.
 bool isSystemTableName(const std::string& name)
 {
 	return name.compare(0, 4, "RDB$") == 0 || name.compare(0, 4, "MON$") == 0 ||
@@ -1019,9 +1025,10 @@ std::vector<std::string> resolveQualifier(const SuggestCtx& ctx,
 }
 
 // Calls f(name) for the names offered at the word under the cursor until it
-// returns false: relation names in a table reference slot (system tables
-// filtered), the members of the qualifier, or all metadata names. full is
-// the statement up to the cursor, after is the rest of the edited buffer.
+// returns false: relation names in a table reference slot (user tables,
+// then system tables), the members of the qualifier, or all metadata names.
+// full is the statement up to the cursor, after is the rest of the edited
+// buffer.
 template <typename F>
 void forEachName(const SuggestCtx& ctx, const std::string& full, const std::string& after, F f)
 {
@@ -1035,10 +1042,15 @@ void forEachName(const SuggestCtx& ctx, const std::string& full, const std::stri
 	}
 	else if (ctx.kind == SuggestCtx::TABLE_REF)
 	{
-		for (const Hq::TableInfo& t : Hq::tables())
+		// The tables of the user first: the hint takes the first match, and
+		// "from S" must give SALES, not SEC$USERS.
+		for (const bool system : {false, true})
 		{
-			if (!isSystemTableName(t.name) && !f(t.name))
-				return;
+			for (const Hq::TableInfo& t : Hq::tables())
+			{
+				if (isSystemTableName(t.name) == system && !f(t.name))
+					return;
+			}
 		}
 	}
 	else if (ctx.kind == SuggestCtx::QUALIFIED)

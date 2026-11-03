@@ -105,6 +105,8 @@ Die eingebauten Farben:
 - reservierte Wörter: hellblau;
 - andere Schlüsselwörter: blau, damit `NAME`, `TYPE`, `VALUE` als
   Spaltennamen nicht hervorstechen;
+- Namen von Tabellen und Views: cyan. Das sind alle Namen aus
+  `RDB$RELATIONS`, auch Systemtabellen (`RDB$RELATIONS`, `MON$ATTACHMENTS`);
 - isql-Befehle: gelb. Das gilt für das Befehlswort (`SHOW`, `HELP`,
   `INPUT`/`IN`, `OUTPUT`/`OUT`, `EDIT`, `SHELL`, `EXIT`, ...), die
   `SET`-Option (`STATS`, `AUTODDL`, `TERM`, `BLOB`, ...), das `SHOW`-Objekt
@@ -150,8 +152,8 @@ Sie können die Farben mit einer Farbschema-Datei ändern (siehe "Farbschema").
   `SELECT E.` + Tab auch, wenn `FROM EMPLOYEE E` bereits rechts vom Cursor
   steht. Andere Anweisungen in derselben Zeile werden nicht verwendet.
 - **Tabellenposition.** Nach `FROM`, `JOIN` und `UPDATE` zeigt hqisql nur
-  Tabellen und Views. Systemtabellen (`RDB$`, `MON$`, `SEC$`, `TMP$`) sind
-  ausgeblendet.
+  Tabellen und Views: zuerst die Tabellen des Benutzers, dann die
+  Systemtabellen (`RDB$`, `MON$`, `SEC$`, `TMP$`).
 
 ## Zeichensätze
 
@@ -478,6 +480,7 @@ Zeile pro Element; `#` beginnt einen Kommentar:
 command    = yellow            # isql commands and their options: SET STATS ON, SHOW TABLE
 reserved   = brightblue bold   # reserved words
 keyword    = blue              # other keywords (NAME, TYPE)
+table      = cyan              # tables and views (EMPLOYEE, RDB$RELATIONS)
 string     = rgb(0,5,0)        # 'string'
 quoted     = brightmagenta     # "quoted name"
 number     = 213               # terminal palette index 0..255
